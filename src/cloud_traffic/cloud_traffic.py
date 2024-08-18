@@ -7,7 +7,7 @@ class CloudTraffic:
         self._gdpr_compliant: str = gdpr_compliant
         self._ips: set = set()
 
-    def add_ip(self, ip):
+    def add_ip(self, ip: str) -> None:
         self._ips.add(ip)
 
     def get_ips(self) -> list:

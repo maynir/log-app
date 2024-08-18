@@ -14,5 +14,6 @@ class LogReader:
                 try:
                     yield LogEntry.from_line(line.strip())
                 except ValueError as e:
-                    print(f"Skipped bad form log entry: {e}")
+                    # print(f"Skipped bad form log entry: {e}")
+                    continue
 
