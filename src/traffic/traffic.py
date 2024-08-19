@@ -25,7 +25,8 @@ class Traffic:
         return cls(csv_file_path=csv_file_path, clouds_dict=clouds_dict)
 
     def add_ip_to_cloud(self, cloud_domain: str, ip: str) -> None:
-        self._clouds_dict[cloud_domain].add_ip(ip)
+        if cloud_domain in [cloud.get_cloud_domain() for cloud in self._clouds_dict.values()]:
+            self._clouds_dict[cloud_domain].add_ip(ip)
 
     def get_clouds_ips(self) -> dict:
         return {cloudTraffic.get_cloud_name(): cloudTraffic.get_ips() for cloud, cloudTraffic in self._clouds_dict.items()}

@@ -21,23 +21,8 @@ class LogAnalyzer:
         self._logs_counter = 0
         self._dns_solver = DnsSolver()
 
-
     def _is_valid_log(self, log_entry: LogEntry) -> bool:
         return log_entry.is_valid()
-
-
-    def _proccess_log_with_domain(self, log_line: LogEntry):
-        with self._lock:
-            self._dns_solver.put(key=log_line.cloud_ip, value=log_line.domain)
-            self._logs_counter += 1
-            self._traffic.add_ip_to_cloud(cloud_domain=log_line.domain, ip=log_line.user_ip)
-
-    def _proccess_log_without_domain(self, log_line: LogEntry):
-        with self._lock:
-            domain = self._dns_solver.get(key=log_line.cloud_ip)
-            if domain is not None:
-                self._logs_counter += 1
-                self._traffic.add_ip_to_cloud(domain, log_line.user_ip)
 
     def _process_logs(self) -> None:
         while True:
@@ -46,10 +31,17 @@ class LogAnalyzer:
                 break
             if not self._is_valid_log(log_line):
                 continue
+
             if log_line.domain:
-                self._proccess_log_with_domain(log_line)
+                domain = log_line.domain
+                self._dns_solver.put(ip=log_line.cloud_ip, domain=domain)
             else:
-                self._proccess_log_without_domain(log_line)
+                domain = self._dns_solver.get(ip=log_line.cloud_ip)
+
+            if domain is not None:
+                with self._lock:
+                    self._logs_counter += 1
+                self._traffic.add_ip_to_cloud(cloud_domain=domain, ip=log_line.user_ip)
 
     def analyze(self) -> dict:
         with concurrent.futures.ThreadPoolExecutor(max_workers=self._thread_num) as executer:
@@ -63,9 +55,6 @@ class LogAnalyzer:
             for _ in range(self._thread_num):
                 self._log_queue.put(None)
 
-            [future.result() for future in futures] # wait for threads to finish
-            print(f"analyzed {self._logs_counter} logs") # TODO: remove
+            [future.result() for future in futures]  # wait for threads to finish
+            print(f"analyzed {self._logs_counter} logs")  # TODO: remove
             return self._traffic.get_clouds_ips()
-
-
-
